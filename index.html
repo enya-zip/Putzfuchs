@@ -98,7 +98,9 @@ body.zoom-an #wer,body.zoom-an #drehen,body.zoom-an #versuch,body.zoom-an #zurue
 .zettel::after{content:"";position:absolute;left:0;right:0;bottom:-18px;height:24px;background:var(--borte) repeat-x;background-size:40px 24px}
 .schleife{position:absolute;left:50%;top:-13%;width:30%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 4px 4px rgba(90,30,40,.2))}
 @media(prefers-reduced-motion:reduce){.haenger{animation:none}}
-.ton{position:fixed;right:clamp(40px,7vw,84px);bottom:18px;z-index:35;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#e2738c;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px rgba(200,110,130,.25)}
+.unten{display:flex;align-items:center;gap:10px;margin-top:6px}
+.unten .link{margin-top:0}
+.ton{flex:none;width:44px;height:44px;border-radius:50%;border:0;background:#fff;color:#e2738c;display:grid;place-items:center;cursor:pointer;box-shadow:0 6px 18px rgba(200,110,130,.25)}
 .ton svg{width:24px;height:24px}
 .ton:focus-visible{outline:3px solid #3b0d12;outline-offset:3px}
 .ton .aus{display:none}.ton[aria-pressed="false"] .an{display:none}.ton[aria-pressed="false"] .aus{display:block}
@@ -148,10 +150,10 @@ body.zoom-an #wer,body.zoom-an #drehen,body.zoom-an #versuch,body.zoom-an #zurue
   </div>
   <button class="btn" id="drehen" type="button">Drehen!</button>
   <p class="info" id="versuch">1 Dreh übrig</p>
-  <button class="link" id="zurueck" type="button">← Zurück zum Baum</button>
+  <div class="unten"><button class="link" id="zurueck" type="button">← Zurück zum Baum</button><button class="ton" id="ton" type="button" aria-pressed="true" aria-label="Ton ein/aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><g class="an"><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></g><g class="aus"><path d="m16 9 5 6M21 9l-5 6"/></g></svg></button></div>
 </section>
 
-<button class="ton" id="ton" type="button" aria-pressed="true" aria-label="Ton ein/aus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4z"/><g class="an"><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></g><g class="aus"><path d="m16 9 5 6M21 9l-5 6"/></g></svg></button>
+
 <div class="ansage" id="ansage" hidden aria-live="polite"><small>Dein Ämtchen</small><b id="ansage-text"></b></div>
 
 <div class="ergebnis" id="ergebnis" hidden role="dialog" aria-modal="true" aria-labelledby="z-amt">
@@ -313,8 +315,10 @@ let tonAn=true;try{tonAn=localStorage.getItem("aemtchen-ton")!=="aus"}catch(e){}
 const tonBtn=$("ton");tonBtn.setAttribute("aria-pressed",String(tonAn));
 tonBtn.addEventListener("click",()=>{tonAn=!tonAn;tonBtn.setAttribute("aria-pressed",String(tonAn));try{localStorage.setItem("aemtchen-ton",tonAn?"an":"aus")}catch(e){}});
 let ac=null;
-function audio(){try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state==="suspended")ac.resume()}catch(e){ac=null}return ac}
-function klick(){if(!tonAn||!ac)return;const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type="triangle";o.frequency.setValueAtTime(1900,t);o.frequency.exponentialRampToValueAtTime(900,t+.03);
+function audio(){try{if(!ac)ac=new (window.AudioContext||window.webkitAudioContext)();if(ac.state!=="running")ac.resume();
+  const b=ac.createBuffer(1,1,22050),s=ac.createBufferSource();s.buffer=b;s.connect(ac.destination);s.start(0)}catch(e){ac=null}return ac}
+["pointerdown","touchend","click"].forEach(t=>document.addEventListener(t,()=>{if(tonAn)audio()},{capture:true,passive:true}));
+function klick(){if(!tonAn||!ac)return;if(ac.state!=="running")ac.resume();const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type="triangle";o.frequency.setValueAtTime(1900,t);o.frequency.exponentialRampToValueAtTime(900,t+.03);
   g.gain.setValueAtTime(.07,t);g.gain.exponentialRampToValueAtTime(.0001,t+.045);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+.05)}
 function gloeckchen(){if(!tonAn||!ac)return;[[1318.5,0],[1975.5,.18]].forEach(([f,d])=>{const t=ac.currentTime+d;
   [[1,.12],[2.01,.05],[3.02,.03],[4.2,.015]].forEach(([m,v])=>{const o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.value=f*m;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+1.6/m+.3);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+2)})})}
@@ -429,7 +433,7 @@ for(let j=0;j<N;j++){
 }
 for(let k=0;k<24;k++){const[x,y]=pt(k*15+7.5,231);s+=`<g class="lampe${k%2?" b":""}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="9" fill="#ffd36b" filter="url(#glow)"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="url(#birne)" stroke="#d9a24a" stroke-width=".8"/></g>`}
 s+=`<circle cx="250" cy="250" r="58" fill="#fff6ef" stroke="#e9a6b2" stroke-width="6"/>
-<text x="250" y="259" text-anchor="middle" fill="#9b2c3c" font-family="'Lilita One',sans-serif" font-size="24">schnyder</text>`;
+<g transform="translate(198 198) scale(${104/1932})"><circle cx="966" cy="966" r="966" fill="#e2738c"/><g fill="#fff6ef"><path d="M1490 666C1480 330 1250 230 985 230C600 230 283 430 283 870C283 1080 390 1220 575 1285L1538 1475C1600 1080 1350 920 1060 870C880 840 720 810 712 680C712 590 830 565 905 565C990 565 1080 610 1062 705Z"/><path d="M600 1352L886 1410L883 1725L597 1752Z"/><path d="M982 1435L1267 1490L1265 1693L979 1720Z"/></g></g>`;
 $("rad").innerHTML=s;
 
 /* Übergang: Kugel wächst bis sie den Bildschirm füllt, dann erscheint das Rad */
@@ -498,6 +502,7 @@ $("zurueck").addEventListener("click",zumBaum);
 $("schliessen").addEventListener("click",zumBaum);
 
 $("drehen").addEventListener("click",async()=>{
+  audio();
   const n=person;if(!n||gedreht[key(n)]!=null)return;
   $("drehen").disabled=true;$("zurueck").disabled=true;
   const v=await holen(n);
@@ -565,7 +570,6 @@ if(window.supabase&&!SUPABASE_URL.includes("DEIN-PROJEKT")){
   };
   laden();
   sb.channel("spins").on("postgres_changes",{event:"*",schema:"public",table:"spins"},laden).subscribe();
-}
 }
 </script>
 </body>
