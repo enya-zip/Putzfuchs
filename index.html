@@ -356,9 +356,11 @@ function funken(x,y){if(RUHIG)return;for(let k=0;k<16;k++){const d=document.crea
 function konfetti(){if(RUHIG)return;const F=["#f6c9d1","#e2738c","#e3b26a","#d9302c","#9cc2a8","#fff6ef"];
   for(let k=0;k<90;k++){const d=document.createElement("div");d.className="konfetti";d.style.left=Math.random()*100+"vw";d.style.background=F[k%F.length];document.body.appendChild(d);
   const dx=(Math.random()-.5)*160,rot=(Math.random()-.5)*1080;d.animate([{transform:"translate(0,0) rotate(0)"},{transform:`translate(${dx}px,${innerHeight+60}px) rotate(${rot}deg)`}],{duration:2200+Math.random()*1800,delay:Math.random()*500,easing:"cubic-bezier(.25,.4,.5,1)"}).finished.then(()=>d.remove())}}
-/* Countdown */
-{const h0=new Date(),z=new Date(h0.getFullYear(),11,25),t=Math.ceil((z-new Date(h0.getFullYear(),h0.getMonth(),h0.getDate()))/864e5);
- $("countdown").textContent=t>1?`Noch ${t} Tage bis Weihnachten`:t===1?"Morgen ist Weihnachten!":t===0?"Frohe Weihnachten!":"Frohe Festtage!";}
+/* Countdown: rechnet mit dem heutigen Datum des Geräts, aktualisiert sich um Mitternacht */
+function countdown(){const h0=new Date(),heute=new Date(h0.getFullYear(),h0.getMonth(),h0.getDate()),z=new Date(h0.getFullYear(),11,24);
+ const t=Math.round((z-heute)/864e5);
+ $("countdown").textContent=t>1?`Noch ${t} Tage bis Heiligabend`:t===1?"Morgen ist Heiligabend!":t===0?"Heute ist Heiligabend!":"Frohe Festtage!";}
+countdown();setInterval(countdown,60000);document.addEventListener("visibilitychange",()=>{if(!document.hidden)countdown()});
 /* Lichterkette */
 function kette(){const W=innerWidth,n=Math.max(3,Math.round(W/260)),sw=W/n;let s="",k=0;
   for(let i=0;i<n;i++){const x0=i*sw,x1=x0+sw;s+=`<path d="M${x0} 6Q${x0+sw/2} 46 ${x1} 6" fill="none" stroke="#5a3b2e" stroke-width="1.6"/>`;
