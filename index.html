@@ -571,6 +571,7 @@ if(window.supabase&&!SUPABASE_URL.includes("DEIN-PROJEKT")){
   laden();
   sb.channel("spins").on("postgres_changes",{event:"*",schema:"public",table:"spins"},laden).subscribe();
 }
+}
 </script>
 </body>
 </html>
