@@ -6,6 +6,7 @@
 <title>Ämtchen-Baum Dezember</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
 <style>
 /* VOICE: ruhig, weihnachtlich, wie eine gemalte Weihnachtskarte
    IDEA: ein Aquarell-Tannenbaum, an dem jede Person ihre eigene Kugel hat
@@ -546,17 +547,24 @@ function zeigen(n,i){
   $("ergebnis").hidden=false;$("schliessen").focus({preventScroll:true});
 }
 
-/* Geteilter Speicher: ein Dreh pro Person, über alle Geräte */
-if(window.claude&&claude.use){
-  claude.use("db").then(d=>{
-    db=d;if(!d)return;
-    try{d.collection("spins").onSnapshot(sn=>{
-      const docs=sn&&(sn.docs||sn)||[];
-      if(Array.isArray(docs))Object.keys(gedreht).forEach(k=>delete gedreht[k]);
-      (Array.isArray(docs)?docs:[]).forEach(x=>{const v=typeof x.data==="function"?x.data():x;if(v&&v.name&&v.amt!=null)gedreht[key(v.name)]=v.amt});
-      if(!$("v-baum").hidden)kugeln();
-    })}catch(e){}
-  }).catch(()=>{});
+/* Geteilter Speicher (Supabase): ein Dreh pro Person, über alle Geräte */
+const SUPABASE_URL="https://DEIN-PROJEKT.supabase.co";
+const SUPABASE_KEY="DEIN-ANON-KEY";
+if(window.supabase&&!SUPABASE_URL.includes("DEIN-PROJEKT")){
+  const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  const laden=async()=>{
+    const {data,error}=await sb.from("spins").select("name,amt");
+    if(error||!Array.isArray(data))return;
+    Object.keys(gedreht).forEach(k=>delete gedreht[k]);
+    data.forEach(v=>{if(v&&v.name&&v.amt!=null)gedreht[key(v.name)]=v.amt});
+    if(!$("v-baum").hidden)kugeln();
+  };
+  db={
+    doc:pfad=>({get:async()=>{const {data}=await sb.from("spins").select("amt").eq("key",pfad.split("/")[1]).maybeSingle();return data}}),
+    collection:()=>({doc:k=>({set:async v=>{await sb.from("spins").insert({key:k,name:v.name,amt:v.amt})}})})
+  };
+  laden();
+  sb.channel("spins").on("postgres_changes",{event:"*",schema:"public",table:"spins"},laden).subscribe();
 }
 }
 </script>
